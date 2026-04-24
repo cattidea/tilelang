@@ -79,13 +79,15 @@ cdef class CythonKernelWrapper:
         for param, (buffer_idx, device) in self.buffer_device_map.items():
             tensor = tensor_list[buffer_idx]
             if isinstance(tensor, torch.Tensor):
-                tensor_device = tensor.device
-                device_type_match = device.type == tensor_device.type
-                device_index_match = (
-                    tensor_device.index is None or
-                    device.index is None or
-                    tensor_device.index == device.index
-                )
+                # tensor_device = tensor.device
+                tensor_device = tensor.place
+                # device_type_match = device.type == tensor_device.type
+                # device_index_match = (
+                #     tensor_device.index is None or
+                #     device.index is None or
+                #     tensor_device.index == device.index
+                # )
+                device_type_match = device_index_match = device == tensor_device
                 if not (device_type_match and device_index_match):
                     raise ValueError(
                         f"Buffer device mismatch for parameter {param}: "

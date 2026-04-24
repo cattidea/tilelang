@@ -320,11 +320,18 @@ class CythonKernelAdapter(BaseKernelAdapter):
         buffer_device_map = {}
         device = None
         if is_cuda_target(self.target) or is_hip_target(self.target):
-            device = torch.device("cuda")
+            # device = torch.device("cuda")
+            import paddle
+            device = paddle.base.core.Place()
+            device.set_place(paddle.CUDAPlace(0))
         elif is_cpu_target(self.target):
-            device = torch.device("cpu")
+            # device = torch.device("cpu")
+            import paddle
+            device = paddle.base.core.Place()
+            device.set_place(paddle.CPUPlace())
         elif is_metal_target(self.target):
-            device = torch.device("mps")
+            # device = torch.device("mps")
+            raise NotImplementedError
         else:
             raise ValueError(f"Unsupported target: {self.target}")
 

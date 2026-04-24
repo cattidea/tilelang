@@ -84,8 +84,8 @@ class KernelParam:
             bool: True if parameter is an unsigned integer type, False otherwise
         """
         dtype_str = str(self.dtype)
-        if dtype_str.startswith("torch."):
-            dtype_str = dtype_str[6:]
+        if dtype_str.startswith("paddle."):
+            dtype_str = dtype_str.removeprefix('paddle.')
         return dtype_str.startswith("uint")
 
     def is_float8(self) -> bool:
@@ -96,8 +96,8 @@ class KernelParam:
             bool: True if parameter is a float8 type, False otherwise
         """
         dtype_str = str(self.dtype)
-        if dtype_str.startswith("torch."):
-            dtype_str = dtype_str[6:]
+        if dtype_str.startswith("paddle."):
+            dtype_str = dtype_str.removeprefix('paddle.')
         return dtype_str.startswith("float8")
 
     def is_float4(self) -> bool:
@@ -120,8 +120,8 @@ class KernelParam:
             bool: True if parameter is a boolean type, False otherwise
         """
         dtype_str = str(self.dtype)
-        if dtype_str.startswith("torch."):
-            dtype_str = dtype_str[6:]
+        if dtype_str.startswith("paddle."):
+            dtype_str = dtype_str.removeprefix('paddle.')
         return dtype_str.startswith("bool")
 
     def torch_dtype(self) -> torch.dtype:

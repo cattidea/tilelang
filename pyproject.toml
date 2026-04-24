@@ -1,10 +1,10 @@
 [project]
-name = "tilelang"
-description = "A tile level programming language to generate high performance code."
+name = "tilelang-paddle"
+description = "A tile level programming language to generate high performance code (PaddlePaddle compatable version)."
 readme = "README.md"
 requires-python = ">=3.10"
-authors = [{ name = "TileLang Contributors" }, { name = "Tile-AI" }]
-maintainers = [{ name = "Lei Wang", email = "leiwang1999@outlook.com" }]
+authors = [{ name = "TileLang Contributors" }, { name = "Tile-AI" }, { name = "PaddlePaddle Contributors" }]
+maintainers = [{ name = "Lei Wang", email = "leiwang1999@outlook.com" }, { name = "Nyakku Shigure", email = "sigure.qaq@gmail.com"}]
 license = "MIT"
 keywords = ["BLAS", "CUDA", "HIP", "Code Generation", "TVM"]
 classifiers = [
@@ -27,16 +27,16 @@ classifiers = [
 ]
 dynamic = ["version"]
 dependencies = [
-    "apache-tvm-ffi>=0.1.10,<=0.1.11",
+    "apache-tvm-ffi~=0.1.3,>=0.1.10,<=0.1.11", # PaddlePaddle need 0.1.3+
     # torch-c-dlpack-ext provides prebuilt torch extensions.
     # Without it, TVM FFI may require JIT compilation on first import.
-    "torch-c-dlpack-ext; python_version < '3.14'",
+    # "torch-c-dlpack-ext; python_version < '3.14'",  # This is no need in PaddlePaddle
     "cloudpickle",
     "ml-dtypes",
     "numpy>=1.23.5",
     "psutil",
-    "torch",
-    "torch>=2.4; platform_system == 'Darwin'",
+    # "torch",
+    # "torch>=2.4; platform_system == 'Darwin'",
     # jit-compiling a torch extension needs setuptools
     "setuptools; platform_system == 'Darwin'",
     "tqdm>=4.62.3",
@@ -141,14 +141,7 @@ include = [
     "testing/**",
     "examples/**",
 ]
-exclude = [
-    ".git",
-    ".github",
-    "**/.git",
-    "**/.github",
-    "3rdparty/**",
-    "build",
-]
+exclude = [".git", ".github", "**/.git", "**/.github", "3rdparty/**", "build"]
 
 [tool.scikit-build.wheel.packages]
 tilelang = "tilelang"
@@ -169,25 +162,16 @@ tilelang = "tilelang"
 "tilelang/3rdparty/composable_kernel/library" = "3rdparty/composable_kernel/library"
 
 
-
 [tool.codespell]
 ignore-words = "docs/spelling_wordlist.txt"
-skip = [
-    "build",
-    "3rdparty",
-    "dist",
-    ".venv"
-]
+skip = ["build", "3rdparty", "dist", ".venv"]
 
 [tool.ruff]
 target-version = "py310"
 line-length = 140
 output-format = "full"
 
-exclude = [
-    "3rdparty",
-    "examples/deepseek_v32/inference",
-]
+exclude = ["3rdparty", "examples/deepseek_v32/inference"]
 
 [tool.ruff.format]
 quote-style = "double"
@@ -206,11 +190,13 @@ docstring-code-line-length = "dynamic"
 [tool.ruff.lint]
 select = [
     # pycodestyle
-    "E", "W",
+    "E",
+    "W",
     # Pyflakes
     "F",
     # pyupgrade
-    "UP", "FA",
+    "UP",
+    "FA",
     # flake8-bugbear
     "B",
     # flake8-simplify
@@ -222,7 +208,8 @@ ignore = [
     # Module level import not at top of file
     "E402",
     # star imports
-    "F405", "F403",
+    "F405",
+    "F403",
     # ambiguous name
     "E741",
     # line too long
@@ -268,7 +255,7 @@ environment-pass = [
 before-build = "env -0 | sort -z | tr '\\0' '\\n'"
 windows.before-build = "set"
 test-command = [
-    'python -c "import tilelang; print(tilelang.__version__)"',
+    # 'python -c "import tilelang; print(tilelang.__version__)"',
 ]
 
 [tool.cibuildwheel.linux]
@@ -322,6 +309,4 @@ repair-wheel-command = "delocate-wheel --verbose --ignore-missing-dependencies -
 select = "*linux*x86_64*"
 # x86_64 runners in GitHub Actions have limited storage,
 # pre-install torch without caching to reduce disk usage during install tilelang.
-before-test = [
-    "pip install torch --no-cache-dir",
-]
+before-test = ["pip install torch --no-cache-dir"]

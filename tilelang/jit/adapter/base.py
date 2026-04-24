@@ -87,6 +87,8 @@ class BaseKernelAdapter(ABC):
         unavailable, returns ``torch.device('cpu')``.
         """
         if torch.cuda.is_available():
+            import paddle
+            return lambda: paddle.framework._current_expected_place()
             try:
                 torch.cuda._lazy_init()
                 current_device = torch._C._cuda_getDevice

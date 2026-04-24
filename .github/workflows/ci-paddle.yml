@@ -1,0 +1,106 @@
+name: CI Paddle
+on:
+  push:
+    branches: [paddle]
+    tags: ["v*"]
+  pull_request:
+  merge_group:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: "${{ github.workflow }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test
+    runs-on:
+      group: H20
+    timeout-minutes: 30
+    env:
+      container_name: tilelang-paddle-test-${{ github.run_id }}
+    steps:
+      - name: Check docker image and run container
+        env:
+          FLAGS_fraction_of_gpu_memory_to_use: 0.15
+          CTEST_PARALLEL_LEVEL: 2
+          WITH_GPU: "ON"
+          CUDA_ARCH_NAME: Hopper
+          WITH_AVX: "ON"
+          PY_VERSION: "3.10"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GPU_DEVICES: 3
+          no_proxy: "bcebos.com,apiin.im.baidu.com,gitee.com,aliyun.com,.baidu.com,.tuna.tsinghua.edu.cn"
+        run: |
+          docker_image=ccr-2vdh3abv-pub.cnc.bj.baidubce.com/paddlepaddle/paddle:cuda129-coverage-test
+          docker run -d -t --gpus device=${GPU_DEVICES} --name ${{ env.container_name }} \
+            -v "/dev/shm:/dev/shm" \
+            -v ${{ github.workspace }}/../../..:${{ github.workspace }}/../../.. \
+            -v ${{ github.workspace }}:/workspace \
+            -e FLAGS_fraction_of_gpu_memory_to_use \
+            -e CTEST_PARALLEL_LEVEL \
+            -e WITH_GPU \
+            -e CUDA_ARCH_NAME \
+            -e WITH_AVX \
+            -e PY_VERSION \
+            -e GITHUB_TOKEN \
+            -e no_proxy \
+            -w /workspace \
+            --network host \
+            ${docker_image}
+
+      - name: Checkout repository
+        run: |
+          docker exec -t ${{ env.container_name }} /bin/bash -c '
+          set -e
+          source ${{ github.workspace }}/../../../proxy
+          git config --global --add safe.directory "*"
+          # Clean workspace
+          find . -maxdepth 1 ! -name "." -exec rm -rf {} +
+          # Checkout
+          git init
+          git remote add origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git fetch origin ${{ github.ref }} --depth=1
+          git checkout FETCH_HEAD
+          git submodule update --init --recursive
+          '
+
+      - name: Install dependencies
+        run: |
+          docker exec -t ${{ env.container_name }} /bin/bash -c '
+          set -e
+          source ${{ github.workspace }}/../../../proxy
+
+          # Install uv
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          source $HOME/.local/bin/env
+
+          # Create and activate virtual environment
+          uv venv .venv --seed
+          source .venv/bin/activate
+
+          # Install paddle
+          uv pip install --pre paddlepaddle-gpu -i https://www.paddlepaddle.org.cn/packages/nightly/cu129/
+
+          # Install project and minimal test runner
+          uv pip install pytest
+          uv pip install -e .
+          '
+
+      - name: Run tests
+        run: |
+          docker exec -t ${{ env.container_name }} /bin/bash -c '
+          set -e
+          source .venv/bin/activate
+          pytest tests_paddle/
+          '
+
+      - name: Terminate and delete the container
+        if: always()
+        run: |
+          set +e
+          docker stop ${{ env.container_name }}
+          docker rm ${{ env.container_name }}
